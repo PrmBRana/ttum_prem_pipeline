@@ -5,6 +5,8 @@ module PCSelect_MUX(
     output wire [31:0] Mux3_PC
 );
 
+
     assign Mux3_PC = PCScr ? PCBranch : PCSequential;
 endmodule
+
 

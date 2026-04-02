@@ -37,6 +37,7 @@ module pipeline(
     output wire spi2_cs_n
 );
 
+
     // ── Reset buffer groups ───────────────────────────────────
     wire rst_core;    // pipeline core stages
     wire rst_mem;     // register file + halt
@@ -87,7 +88,7 @@ module pipeline(
     // (flush injects 0x00 which would decode as halt without gating)
     wire halt_active = halt_top & ~stall_Pro & ~FlushD_top & ~FlushE_top;
     reg  halt_latch;
-    always @(posedge clk or posedge rst_mem) begin
+    always @(posedge clk) begin
         if (rst_mem)          halt_latch <= 1'b0;
         else if (stall_Pro)   halt_latch <= 1'b0;
         else if (halt_active) halt_latch <= 1'b1;
@@ -361,4 +362,5 @@ module pipeline(
         .gpio_out2(spi2_cs_n));
 
 endmodule
+
 

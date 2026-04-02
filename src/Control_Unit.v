@@ -25,6 +25,7 @@ module Control (
     output reg  [1:0]  ALUType
 );
 
+
     always @(*) begin
         // ── Safe defaults ────────────────────────────────
         RegWriteD   = 1'b0;
@@ -176,3 +177,4 @@ module Control (
     end
 
 endmodule
+

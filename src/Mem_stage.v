@@ -29,6 +29,7 @@ module MEM_stage(
     output reg [1:0]  ResultSrcM_out,
     output reg        MemWriteM_out
 );
+    
     always @(posedge clk) begin
         if (reset) begin
             ALUResult_out  <= 32'b0;
@@ -49,3 +50,4 @@ module MEM_stage(
         end
     end
 endmodule
+

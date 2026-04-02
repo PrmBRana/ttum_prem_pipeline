@@ -38,6 +38,7 @@ module Reg_file (
     output wire [31:0] Read_data2
 );
 
+
     integer k;
     reg [31:0] Register [0:31];
 
@@ -68,3 +69,4 @@ module Reg_file (
                         Register[rs2_addr];
 
 endmodule
+

@@ -16,6 +16,7 @@ module WriteBack_stage(
     output reg [1:0] ResultSrcW_out
 );
 
+
     always @(posedge clk) begin
         if (reset) begin
             ALUResultW_out <= 32'b0;
@@ -34,4 +35,5 @@ module WriteBack_stage(
         end
     end
 endmodule
+
 

@@ -13,6 +13,7 @@ module gpio1_io (
     input  wire spi_pending,
     output wire gpio_out1
 );
+
     reg gpio_out_reg;
     reg deassert_pending;
     wire spi_idle = !spi_busy && !spi_pending;
@@ -58,6 +59,7 @@ module gpio2_io (
     input  wire spi_pending,
     output wire gpio_out2
 );
+
     reg gpio_out_reg;
     reg deassert_pending;
     wire spi_idle = !spi_busy && !spi_pending;
@@ -88,3 +90,4 @@ module gpio2_io (
     end
     assign gpio_out2 = gpio_out_reg;
 endmodule
+

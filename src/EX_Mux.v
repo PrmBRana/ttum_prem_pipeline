@@ -20,6 +20,7 @@ module EX_Mux(
     input  wire        ALUSCRE,
     output wire [31:0] SCRB
 );
+
     assign ScrA = (ForwardAE == 2'b10) ? ALUres   :
                   (ForwardAE == 2'b01) ? resultW  : RD1;
 
@@ -30,6 +31,7 @@ module EX_Mux(
 endmodule
 
 
+
 // ── PC target adder ───────────────────────────────────────────
 module Adder(
     input  wire [31:0] pc_E,
@@ -38,9 +40,11 @@ module Adder(
     input  wire        JumpR,
     output wire [31:0] PCTarget
 );
+
     wire [31:0] base_addr = JumpR ? rd1_E : pc_E;
     assign PCTarget = JumpR ? ((base_addr + imm_2) & 32'hFFFF_FFFE)
                             :  (base_addr + imm_2);
 endmodule
+
 
 

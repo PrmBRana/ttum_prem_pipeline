@@ -33,6 +33,7 @@ module Hazard_Unit (
     output reg  [1:0]  Forward_BE
 );
 
+
     // Load-use hazard: lw in EX, dependent instr in DE
     wire load_use_hazard = (ResultSrcE_in == 2'b01) &&
                             RegWriteE                &&
@@ -72,3 +73,4 @@ module Hazard_Unit (
     end
 
 endmodule
+

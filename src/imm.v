@@ -6,6 +6,9 @@ module imm (
     output reg  [31:0] ImmExt
 );
 
+
+    wire _unused = &{1'b0, instruction[6:0]}; // silence unused bits warning
+
     always @(*) begin
         case (ImmSrc)
 
@@ -52,4 +55,5 @@ module imm (
         endcase
     end
 endmodule
+
 

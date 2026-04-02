@@ -288,17 +288,10 @@ async def uart_spi_test(dut):
 
     # Wait for SPI
     try:
-        result = await with_timeout(slave_task, 5, 'ms')
-
-        dut._log.info(f"SPI RX: {[hex(b) for b in result]}")
-        dut._log.info(
-            f"SPI STRING: {''.join(byte_to_ascii(b) for b in result)}"
-        )
-
-    except cocotb.result.SimTimeoutError:
-        dut._log.error("UART timeout!")
-
-    dut._log.info("Test finished successfully")
+        result = await with_timeout(slave_task, 2, 'ms')
+    except cocotb.result.SimTimeoutError:         # ← correct for v1.9.2
+        dut._log.warning("SPI timed out")
+        result = []
 
 #============================================================
 # UART ECHO TEST

@@ -18,6 +18,7 @@ module uart_bootloader (
     output reg         stall_pro
 );
 
+
     localparam HANDSHAKE_BYTE = 8'h25;
     localparam ACK            = 8'h55;
     localparam NACK           = 8'hFF;
@@ -34,30 +35,14 @@ module uart_bootloader (
     reg        buffer_full0, buffer_full1;
     reg [7:0]  addr_count;
 
-    // Combinational next-buffer — needed for same-cycle sentinel check
-    // Non-blocking assignment means buffer0/1 not yet updated
-    // when we check at byte_count==3
-    reg [31:0] next_buf0, next_buf1;
-    always @(*) begin
-        next_buf0 = buffer0;
-        next_buf1 = buffer1;
-        if (rx_strobe && handshake_done && !boot_done && byte_count == 2'd3) begin
-            if (buffer_sel == 1'b0) begin
-                next_buf0[31:24] = rx_data;
-            end else begin
-                next_buf1[31:24] = rx_data;
-            end
-        end
-    end
-
     // ── RX edge detect ────────────────────────────────────────
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) rx_valid_d <= 1'b0;
         else       rx_valid_d <= rx_valid;
     end
 
     // ── Main FSM ──────────────────────────────────────────────
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             tx_data        <= 8'd0;
             tx_start       <= 1'b0;
@@ -156,4 +141,5 @@ module uart_bootloader (
     end
 
 endmodule
+
 

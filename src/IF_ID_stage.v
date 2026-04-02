@@ -32,6 +32,7 @@ module IF_ID_stage (
     output reg [31:0] PCplus4_out,
     output reg [31:0] PC_out
 );
+
     always @(posedge clk) begin
         if (reset) begin
             instruction_out <= 32'b0;
@@ -53,3 +54,4 @@ module IF_ID_stage (
         // else: stallD=1 → retain all (implicit, reg holds value)
     end
 endmodule
+

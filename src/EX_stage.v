@@ -63,6 +63,7 @@ module EX_stage (
     output reg  [1:0]  ALUType_out
 );
 
+
     always @(posedge clk) begin
         if (reset || flushE) begin
             // Full NOP bubble — data AND control all zero
@@ -106,3 +107,4 @@ module EX_stage (
     end
 
 endmodule
+

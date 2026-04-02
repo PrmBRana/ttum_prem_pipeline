@@ -70,6 +70,7 @@ module DataMem #(
     output reg         gpio2_wdata
 );
 
+    wire _unused = &{1'b0, DataWriteM_in[31:8]}; // silence unused bits warning
     // ── Address decode ────────────────────────────────────────
     // UART
     wire sel_uart_tx   = (aluAddress_in == 32'h1000_0000);
@@ -120,12 +121,12 @@ module DataMem #(
         if (reset) begin
             uart_tx_rd_prev <= 1'b0;
             uart_tx_start   <= 1'b0;
-            uart_out_data   <= 32'd0;
+            uart_out_data   <= 8'd0;
         end else begin
             uart_tx_rd_prev <= uart_tx_rd_level;
             uart_tx_start   <= 1'b0;
             if (uart_tx_rd) begin
-                uart_out_data <= {24'b0, uart_tx_rd_data};
+                uart_out_data <= uart_tx_rd_data;
                 uart_tx_start <= 1'b1;
             end
         end
@@ -343,3 +344,4 @@ module DataMem #(
     end
 
 endmodule
+

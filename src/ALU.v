@@ -24,6 +24,7 @@ module ALU (
     output reg         Zero
 );
 
+
     always @(*) begin
         ALUResult = 32'd0;
         Zero      = 1'b0;
@@ -81,3 +82,4 @@ module ALU (
     end
 
 endmodule
+

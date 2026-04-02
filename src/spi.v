@@ -19,14 +19,19 @@ module spi_master #(
     input  wire                  miso
 );
 
+
     reg [DATA_WIDTH-1:0]           tx_shift, rx_shift;
     reg [$clog2(DATA_WIDTH+1)-1:0] bit_cnt;
     reg [$clog2(CLK_DIV)-1:0]      clk_div;
     reg                            sclk_en, sclk_d;
 
-    // FIX WIDTHTRUNC: cast localparam to exact register width
+    // FIX WIDTHTRUNC: truncation is intentional — values fit in width
+    // CLK_DIV=4: HALF_DIV=1 (2-bit), FULL_DIV=3 (2-bit) ✓
+    // CLK_DIV=8: HALF_DIV=3 (3-bit), FULL_DIV=7 (3-bit) ✓
+    /* verilator lint_off WIDTHTRUNC */
     localparam [$clog2(CLK_DIV)-1:0] HALF_DIV = CLK_DIV/2 - 1;
     localparam [$clog2(CLK_DIV)-1:0] FULL_DIV = CLK_DIV   - 1;
+    /* verilator lint_on WIDTHTRUNC */
 
     localparam IDLE     = 2'b00;
     localparam TRANSFER = 2'b01;
@@ -35,7 +40,7 @@ module spi_master #(
     reg [1:0] state;
 
     // ── Clock generation ──────────────────────────────────────
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             clk_div <= 0;
             sclk    <= CPOL;
@@ -50,7 +55,7 @@ module spi_master #(
     end
 
     // ── Edge detect ───────────────────────────────────────────
-    always @(posedge clk or posedge reset)
+    always @(posedge clk)
         sclk_d <= reset ? CPOL : sclk;
 
     wire sclk_rise   = ( sclk & ~sclk_d);
@@ -59,7 +64,7 @@ module spi_master #(
     wire shift_edge  = (CPHA == 0) ? sclk_fall : sclk_rise;
 
     // ── FSM ───────────────────────────────────────────────────
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             state    <= IDLE;
             busy     <= 0; done    <= 0; sclk_en <= 0;
@@ -110,4 +115,5 @@ module spi_master #(
         end
     end
 endmodule
+
 

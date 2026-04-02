@@ -64,9 +64,12 @@ module CircularBuffer #(
     output wire                  full,
     output wire                  empty
 );
-    localparam PTR_W = $clog2(DEPTH);   // 4 bits for DEPTH=16
-    // FIX WIDTHTRUNC: cast DEPTH-1 to exact pointer width
+
+
+    localparam PTR_W = $clog2(DEPTH);
+    /* verilator lint_off WIDTHTRUNC */
     localparam [PTR_W-1:0] MAX_PTR = DEPTH - 1;
+    /* verilator lint_on WIDTHTRUNC */
 
     // ── Memory array ──────────────────────────────────────────
     reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
@@ -87,7 +90,7 @@ module CircularBuffer #(
 
     // ── Sequential logic ──────────────────────────────────────
     integer i;
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             wr_ptr <= {PTR_W{1'b0}};
             rd_ptr <= {PTR_W{1'b0}};
@@ -123,4 +126,5 @@ module CircularBuffer #(
     end
 
 endmodule
+
 
