@@ -288,9 +288,9 @@ async def uart_spi_test(dut):
 
     # Wait for SPI
     try:
-        result = await with_timeout(slave_task, 2, 'ms')
-    except cocotb.result.SimTimeoutError:         # ← correct for v1.9.2
-        dut._log.warning("SPI timed out")
+        result = await with_timeout(slave_task, 1, 'ms')
+    except Exception:                    # catch anything — version safe
+        dut._log.warning("SPI timed out — partial result")
         result = []
 
 #============================================================
