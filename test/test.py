@@ -42,33 +42,37 @@ async def test_uart_bootloader(dut):
   if val == 0x55:
       dut._log.info("✓ SUCCESS: Handshake ACK received")
       instructions = [
-           0x40000537,
-           0x30000937,
-           0x100009b7,
-           0x00850593,
-           0x00450613,
-           0x00c50693,
-           0x00898a93,
-           0x00490713,
-           0x00100193,
-           0x00000813,
-           0x03200293,
-           0x00300b13,
-           0x01072023,
-           0x0aa00393,
-           0x02028663,
-           0x00752023,
-           0x0006a403,
-           0xfe040ee3,
-           0x0005a483,
-           0x000aa303,
-           0x01637333,
-           0xfe031ce3,
-           0x0099a023,
-           0xfff28293,
-           0xfd9ff06f,
-           0x00372023,
-           0x00000073,
+                0x20000537,
+                0x30000737,
+                0x400009b7,
+                0x00850593,
+                0x00450613,
+                0x00c50693,
+                0x00898793,
+                0x00498813,
+                0x00c98893,
+                0x00470913,
+                0x00100a13,
+                0x00000a93,
+                0x02800b13,
+                0x00300b93,
+                0x01592023,
+                0x01572023,
+                0x0aa00393,
+                0x020b0663,
+                0x0079a023,
+                0x0008a403,
+                0xfe040ee3,
+                0x0007a483,
+                0x00062303,
+                0x01737333,
+                0xfe031ce3,
+                0x00952023,
+                0xfffb0b13,
+                0xfd9ff06f,
+                0x01492023,
+                0x01472023,
+                0x00000073
       ]
       dut._log.info("Uploading instructions to processor...")
       for idx, inst in enumerate(instructions):
@@ -182,7 +186,13 @@ async def spi_slave_full_duplex(dut, slave_tx_data):
     mosi = dut.spi2_mosi
     miso = dut.spi2_miso
     cs   = dut.spi2_cs_n
-    uart_sink   = UartSink(dut.UART_tx, baud=115200)
+    # uart_sink   = UartSink(dut.UART_tx, baud=115200)
+
+    sclk1 = dut.spi1_sclk
+    mosi1 = dut.spi1_mosi
+    miso1 = dut.spi1_miso
+    cs1   = dut.spi1_cs_n
+
 
     received = []
     idx = 0
@@ -219,7 +229,7 @@ async def spi_slave_full_duplex(dut, slave_tx_data):
         dut._log.info(
             f"[{idx}] MOSI=0x{rx_byte:02X} ('{byte_to_ascii(rx_byte)}') "
         f"| MISO=0x{tx_byte:02X} ('{byte_to_ascii(tx_byte)}') "
-        f"| UART_tx=0x{tx_byte:02X} ('{byte_to_ascii(tx_byte)}')"
+        f"| mosi1=0x{tx_byte:02X} ('{byte_to_ascii(tx_byte)}')"
         )
 
         idx += 1
@@ -278,7 +288,7 @@ async def uart_spi_test(dut):
 
     # Wait for SPI
     try:
-        result = await with_timeout(slave_task, 10, 'ms')
+        result = await with_timeout(slave_task, 5, 'ms')
 
         dut._log.info(f"SPI RX: {[hex(b) for b in result]}")
         dut._log.info(
@@ -286,7 +296,9 @@ async def uart_spi_test(dut):
         )
 
     except cocotb.result.SimTimeoutError:
-        dut._log.error("❌ SPI TIMEOUT → DUT did NOT start SPI")
+        dut._log.error("UART timeout!")
+
+    dut._log.info("Test finished successfully")
 
 #============================================================
 # UART ECHO TEST

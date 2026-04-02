@@ -5,99 +5,83 @@ module uart_bootloader (
     input  wire        clk,
     input  wire        reset,
 
-    // UART RX
     input  wire [7:0]  rx_data,
     input  wire        rx_valid,
 
-    // UART TX
     output reg  [7:0]  tx_data,
     output reg         tx_start,
 
-    // Memory interface
     output reg         mem_we,
-    output reg [7:0]   mem_addr,
-    output reg [31:0]  mem_wdata,
+    output reg  [7:0]  mem_addr,
+    output reg  [31:0] mem_wdata,
 
-    // CPU control
     output reg         stall_pro
 );
 
-    // ============================================================
-    // CONSTANTS
-    // ============================================================
     localparam HANDSHAKE_BYTE = 8'h25;
     localparam ACK            = 8'h55;
     localparam NACK           = 8'hFF;
-    localparam SENTINEL       = 32'h00000073; // EBREAK / ECALL
+    localparam SENTINEL       = 32'h00000073; // ecall
 
-    // ============================================================
-    // INTERNAL STATE
-    // ============================================================
     reg handshake_done;
     reg boot_done, boot_done_d;
-
-    // RX edge detect
     reg rx_valid_d;
     wire rx_strobe = rx_valid & ~rx_valid_d;
 
-    // Byte assembly
     reg [1:0]  byte_count;
     reg        buffer_sel;
-
     reg [31:0] buffer0, buffer1;
     reg        buffer_full0, buffer_full1;
-
-    reg [31:0] last_written;
     reg [7:0]  addr_count;
 
-    // ============================================================
-    // RX VALID EDGE DETECTOR
-    // ============================================================
-    always @(posedge clk) begin
-        if (reset)
-            rx_valid_d <= 1'b0;
-        else
-            rx_valid_d <= rx_valid;
+    // Combinational next-buffer — needed for same-cycle sentinel check
+    // Non-blocking assignment means buffer0/1 not yet updated
+    // when we check at byte_count==3
+    reg [31:0] next_buf0, next_buf1;
+    always @(*) begin
+        next_buf0 = buffer0;
+        next_buf1 = buffer1;
+        if (rx_strobe && handshake_done && !boot_done && byte_count == 2'd3) begin
+            if (buffer_sel == 1'b0) begin
+                next_buf0[31:24] = rx_data;
+            end else begin
+                next_buf1[31:24] = rx_data;
+            end
+        end
     end
 
-    // ============================================================
-    // MAIN LOGIC
-    // ============================================================
-    always @(posedge clk) begin
+    // ── RX edge detect ────────────────────────────────────────
+    always @(posedge clk or posedge reset) begin
+        if (reset) rx_valid_d <= 1'b0;
+        else       rx_valid_d <= rx_valid;
+    end
+
+    // ── Main FSM ──────────────────────────────────────────────
+    always @(posedge clk or posedge reset) begin
         if (reset) begin
             tx_data        <= 8'd0;
             tx_start       <= 1'b0;
             mem_we         <= 1'b0;
             mem_addr       <= 8'd0;
             mem_wdata      <= 32'd0;
-
             handshake_done <= 1'b0;
             boot_done      <= 1'b0;
             boot_done_d    <= 1'b0;
-
             buffer0        <= 32'd0;
             buffer1        <= 32'd0;
             buffer_full0   <= 1'b0;
             buffer_full1   <= 1'b0;
             buffer_sel     <= 1'b0;
             byte_count     <= 2'd0;
-
             addr_count     <= 8'd0;
-            last_written   <= 32'd0;
-
             stall_pro      <= 1'b1;
         end else begin
-            // Defaults
-            tx_start  <= 1'b0;
-            mem_we    <= 1'b0;
-
-            // One-cycle delayed stall release (safe)
+            tx_start    <= 1'b0;
+            mem_we      <= 1'b0;
             boot_done_d <= boot_done;
             stall_pro   <= ~boot_done_d;
 
-            // ====================================================
-            // HANDSHAKE
-            // ====================================================
+            // ── Handshake ─────────────────────────────────────
             if (!handshake_done && rx_strobe) begin
                 if (rx_data == HANDSHAKE_BYTE) begin
                     tx_data        <= ACK;
@@ -111,9 +95,7 @@ module uart_bootloader (
                 end
             end
 
-            // ====================================================
-            // RX BYTE COLLECTION
-            // ====================================================
+            // ── RX byte collection ────────────────────────────
             else if (handshake_done && rx_strobe && !boot_done) begin
                 if (!(buffer_full0 && buffer_full1)) begin
                     if (buffer_sel == 1'b0 && !buffer_full0) begin
@@ -125,8 +107,7 @@ module uart_bootloader (
                         endcase
                         if (byte_count == 2'd3)
                             buffer_full0 <= 1'b1;
-                    end
-                    else if (buffer_sel == 1'b1 && !buffer_full1) begin
+                    end else if (buffer_sel == 1'b1 && !buffer_full1) begin
                         case (byte_count)
                             2'd0: buffer1[7:0]   <= rx_data;
                             2'd1: buffer1[15:8]  <= rx_data;
@@ -146,38 +127,33 @@ module uart_bootloader (
                 end
             end
 
-            // ====================================================
-            // MEMORY WRITEBACK
-            // ====================================================
-            if (!boot_done) begin
-                if (buffer_full0) begin
-                    mem_wdata    <= buffer0;
-                    mem_addr     <= addr_count;
-                    mem_we       <= 1'b1;
-                    addr_count   <= addr_count + 1'b1;
-                    last_written <= buffer0;
-
-                    buffer0      <= 32'd0;
-                    buffer_full0 <= 1'b0;
-
-                    if (buffer0 == SENTINEL)
-                        boot_done <= 1'b1;
-                end
-                else if (buffer_full1) begin
-                    mem_wdata    <= buffer1;
-                    mem_addr     <= addr_count;
-                    mem_we       <= 1'b1;
-                    addr_count   <= addr_count + 1'b1;
-                    last_written <= buffer1;
-
-                    buffer1      <= 32'd0;
-                    buffer_full1 <= 1'b0;
-
-                    if (buffer1 == SENTINEL)
-                        boot_done <= 1'b1;
-                end
+            // ── Memory writeback ──────────────────────────────
+            // FIX: write even if this IS the sentinel instruction
+            // Use buffer_full AND check AFTER write whether it was sentinel
+            // Do NOT gate on !boot_done — sentinel must be written!
+            if (buffer_full0) begin
+                mem_wdata    <= buffer0;
+                mem_addr     <= addr_count;
+                mem_we       <= 1'b1;
+                addr_count   <= addr_count + 1'b1;
+                buffer0      <= 32'd0;
+                buffer_full0 <= 1'b0;
+                // FIX: set boot_done AFTER write, not before
+                if (buffer0 == SENTINEL)
+                    boot_done <= 1'b1;
+            end else if (buffer_full1) begin
+                mem_wdata    <= buffer1;
+                mem_addr     <= addr_count;
+                mem_we       <= 1'b1;
+                addr_count   <= addr_count + 1'b1;
+                buffer1      <= 32'd0;
+                buffer_full1 <= 1'b0;
+                // FIX: set boot_done AFTER write
+                if (buffer1 == SENTINEL)
+                    boot_done <= 1'b1;
             end
         end
     end
 
 endmodule
+

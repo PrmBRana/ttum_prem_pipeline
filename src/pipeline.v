@@ -199,7 +199,6 @@ module pipeline(
 
     // ── Fanout buffer wires ───────────────────────────────────
     // ResultW: drives Reg_file + MUX_A + MUX_B (3 loads, 32-bit)
-    wire [31:0] ResultW_rf   = ResultW_top;  // → Reg_file write
     wire [31:0] ResultW_muxa = ResultW_top;  // → forwarding MUX A
     wire [31:0] ResultW_muxb = ResultW_top;  // → forwarding MUX B
 
@@ -360,4 +359,6 @@ module pipeline(
         .wr_en2(gpio2_wr_en_w), .wdata2(gpio2_wdata_w),
         .spi_busy(spi2_busy_w), .spi_pending(spi2_pending_w),
         .gpio_out2(spi2_cs_n));
+
 endmodule
+

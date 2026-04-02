@@ -8,11 +8,11 @@ module mem1KB_32bit (
 );
 
     localparam integer DEPTH = 64;  // ✅ plain integer, no width limit
-    reg [31:0] mem [0:DEPTH-1];      // [0:255] = 256 entries = 1KB
+    reg [31:0] mem [0:DEPTH-1];      // [0:63] = 64 entries = 1KB
 
     // Write
     always @(posedge clk) begin
-        if (we && addr != 8'hFF)     // ✅ addr is 8-bit, max index is 255
+        if (we && addr != 8'hFF)     // ✅ addr is 8-bit, max index is 63
             mem[addr] <= wdata;
     end
     
@@ -21,4 +21,5 @@ module mem1KB_32bit (
     assign Instruction_out = mem[read_Address[8:2]];
 
 endmodule
+
 
