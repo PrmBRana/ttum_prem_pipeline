@@ -1,12 +1,6 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-// ============================================================
-//  Control Unit
-//
-//  KEY FIX: halt uses blocking assignment (=) not non-blocking
-//  (<=) inside always @(*) combinational block.
-// ============================================================
 module Control (
     input  wire [6:0]  Opcode,
     input  wire [2:0]  funct3,
@@ -24,10 +18,7 @@ module Control (
     output reg  [2:0]  ImmSrc,
     output reg  [1:0]  ALUType
 );
-
-
     always @(*) begin
-        // ── Safe defaults ────────────────────────────────
         RegWriteD   = 1'b0;
         ResultSrcD  = 2'b00;
         MemWriteD   = 1'b0;
@@ -38,32 +29,28 @@ module Control (
         ALUSrcD     = 1'b0;
         ImmSrc      = 3'b000;
         ALUType     = 2'b00;
-        halt        = 1'b0;   // ✅ blocking assignment
+        halt        = 1'b0;
 
         case (Opcode)
-
-            // ── R-type ───────────────────────────────────
-            7'b0110011: begin
+            7'b0110011: begin // R-type
                 RegWriteD = 1'b1;
                 ALUSrcD   = 1'b0;
                 ALUType   = 2'b00;
                 case ({funct7, funct3})
-                    {7'b0000000, 3'b000}: ALUControlD = 4'b0010; // ADD
-                    {7'b0100000, 3'b000}: ALUControlD = 4'b0011; // SUB
-                    {7'b0000000, 3'b110}: ALUControlD = 4'b0001; // OR
-                    {7'b0000000, 3'b111}: ALUControlD = 4'b0000; // AND
-                    {7'b0000000, 3'b100}: ALUControlD = 4'b0100; // XOR
-                    {7'b0000000, 3'b001}: ALUControlD = 4'b0101; // SLL
-                    {7'b0000000, 3'b101}: ALUControlD = 4'b0110; // SRL
-                    {7'b0100000, 3'b101}: ALUControlD = 4'b0111; // SRA
-                    {7'b0000000, 3'b010}: ALUControlD = 4'b1000; // SLT
-                    {7'b0000000, 3'b011}: ALUControlD = 4'b1001; // SLTU
-                    default:              ALUControlD = 4'b0000;
+                    {7'b0000000,3'b000}: ALUControlD = 4'b0010; // ADD
+                    {7'b0100000,3'b000}: ALUControlD = 4'b0011; // SUB
+                    {7'b0000000,3'b110}: ALUControlD = 4'b0001; // OR
+                    {7'b0000000,3'b111}: ALUControlD = 4'b0000; // AND
+                    {7'b0000000,3'b100}: ALUControlD = 4'b0100; // XOR
+                    {7'b0000000,3'b001}: ALUControlD = 4'b0101; // SLL
+                    {7'b0000000,3'b101}: ALUControlD = 4'b0110; // SRL
+                    {7'b0100000,3'b101}: ALUControlD = 4'b0111; // SRA
+                    {7'b0000000,3'b010}: ALUControlD = 4'b1000; // SLT
+                    {7'b0000000,3'b011}: ALUControlD = 4'b1001; // SLTU
+                    default:             ALUControlD = 4'b0000;
                 endcase
             end
-
-            // ── I-type ALU ───────────────────────────────
-            7'b0010011: begin
+            7'b0010011: begin // I-type ALU
                 RegWriteD = 1'b1;
                 ALUSrcD   = 1'b1;
                 ImmSrc    = 3'b000;
@@ -74,37 +61,31 @@ module Control (
                     3'b110: ALUControlD = 4'b0001; // ORI
                     3'b111: ALUControlD = 4'b0000; // ANDI
                     3'b001: ALUControlD = 4'b0101; // SLLI
-                    3'b101: ALUControlD = (funct7 == 7'b0100000) ? 4'b0111 : 4'b0110; // SRAI:SRLI
+                    3'b101: ALUControlD = (funct7==7'b0100000) ? 4'b0111:4'b0110;
                     3'b010: ALUControlD = 4'b1000; // SLTI
                     3'b011: ALUControlD = 4'b1001; // SLTIU
                     default: ALUControlD = 4'b0000;
                 endcase
             end
-
-            // ── LOAD ─────────────────────────────────────
-            7'b0000011: begin
+            7'b0000011: begin // LOAD
                 RegWriteD   = 1'b1;
-                ResultSrcD  = 2'b01;   // data from memory
+                ResultSrcD  = 2'b01;
                 ALUSrcD     = 1'b1;
                 ImmSrc      = 3'b000;
-                ALUControlD = 4'b0010; // ADD (address calc)
+                ALUControlD = 4'b0010;
                 ALUType     = 2'b00;
             end
-
-            // ── STORE ────────────────────────────────────
-            7'b0100011: begin
+            7'b0100011: begin // STORE
                 MemWriteD   = 1'b1;
                 ALUSrcD     = 1'b1;
-                ImmSrc      = 3'b001;  // S-type
-                ALUControlD = 4'b0010; // ADD (address calc)
+                ImmSrc      = 3'b001;
+                ALUControlD = 4'b0010;
                 ALUType     = 2'b01;
             end
-
-            // ── BRANCH ───────────────────────────────────
-            7'b1100011: begin
+            7'b1100011: begin // BRANCH
                 BranchD = 1'b1;
                 ALUSrcD = 1'b0;
-                ImmSrc  = 3'b010;      // B-type
+                ImmSrc  = 3'b010;
                 ALUType = 2'b10;
                 case (funct3)
                     3'b000: ALUControlD = 4'b0000; // BEQ
@@ -116,21 +97,17 @@ module Control (
                     default: ALUControlD = 4'b0000;
                 endcase
             end
-
-            // ── JAL ──────────────────────────────────────
-            7'b1101111: begin
+            7'b1101111: begin // JAL
                 RegWriteD   = 1'b1;
-                ResultSrcD  = 2'b10;   // PC+4
+                ResultSrcD  = 2'b10;
                 jumpD       = 1'b1;
                 jumpR       = 1'b0;
-                ImmSrc      = 3'b011;  // J-type
+                ImmSrc      = 3'b011;
                 ALUSrcD     = 1'b1;
                 ALUControlD = 4'b0010;
                 ALUType     = 2'b11;
             end
-
-            // ── JALR ─────────────────────────────────────
-            7'b1100111: begin
+            7'b1100111: begin // JALR
                 RegWriteD   = 1'b1;
                 ResultSrcD  = 2'b10;
                 jumpD       = 1'b1;
@@ -140,41 +117,27 @@ module Control (
                 ALUControlD = 4'b0010;
                 ALUType     = 2'b11;
             end
-
-            // ── LUI ──────────────────────────────────────
-            7'b0110111: begin
+            7'b0110111: begin // LUI
                 RegWriteD   = 1'b1;
-                ResultSrcD  = 2'b00;
-                ALUSrcD     = 1'b1;
-                ImmSrc      = 3'b100;  // U-type
-                ALUControlD = 4'b0010;
-                ALUType     = 2'b00;
-            end
-
-            // ── AUIPC ────────────────────────────────────
-            7'b0010111: begin
-                RegWriteD   = 1'b1;
-                ResultSrcD  = 2'b00;
                 ALUSrcD     = 1'b1;
                 ImmSrc      = 3'b100;
                 ALUControlD = 4'b0010;
                 ALUType     = 2'b00;
             end
-
-            // ── ECALL / EBREAK ───────────────────────────
-            7'b1110011: begin
-                if (funct3 == 3'b000) begin
-                    // ✅ blocking assignment in combinational block
+            7'b0010111: begin // AUIPC
+                RegWriteD   = 1'b1;
+                ALUSrcD     = 1'b1;
+                ImmSrc      = 3'b100;
+                ALUControlD = 4'b0010;
+                ALUType     = 2'b00;
+            end
+            7'b1110011: begin // ECALL/EBREAK
+                if (funct3 == 3'b000)
                     halt = (imm == 12'h000 || imm == 12'h001) ? 1'b1 : 1'b0;
-                end
             end
-
-            default: begin
-                // All signals already defaulted above
-            end
-
+            default: ;
         endcase
     end
-
 endmodule
+
 

@@ -1,25 +1,23 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-module WriteBack_stage(
-    input wire clk,
-    input wire reset,
-    input wire [31:0] ALUResultW_in,
-    input wire [31:0] ReadDataW_in,
-    input wire [4:0] RdW_in,
-    input wire [31:0] PCPlus4W_in,
-    input wire RegWriteW_in,
-    input wire [1:0] ResultSrcW_in,
-    output reg [31:0] ALUResultW_out,
-    output reg [31:0] ReadDataW_out,
-    output reg [4:0] RdW_out,
-    output reg [31:0] PCPlus4W_out,
-    output reg RegWriteW_out,
-    output reg [1:0] ResultSrcW_out
+module WriteBack_stage (
+    input  wire        clk,
+    input  wire        reset,
+    input  wire [31:0] ALUResultW_in,
+    input  wire [31:0] ReadDataW_in,
+    input  wire [4:0]  RdW_in,
+    input  wire [31:0] PCPlus4W_in,
+    input  wire        RegWriteW_in,
+    input  wire [1:0]  ResultSrcW_in,
+    output reg  [31:0] ALUResultW_out,
+    output reg  [31:0] ReadDataW_out,
+    output reg  [4:0]  RdW_out,
+    output reg  [31:0] PCPlus4W_out,
+    output reg         RegWriteW_out,
+    output reg  [1:0]  ResultSrcW_out
 );
-
-    // FIX: Added 'or posedge reset' to the sensitivity list
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             ALUResultW_out <= 32'b0;
             ReadDataW_out  <= 32'b0;
@@ -37,3 +35,4 @@ module WriteBack_stage(
         end
     end
 endmodule
+

@@ -1,31 +1,10 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-// ============================================================
-//  EX_stage — ID/EX Pipeline Register
-//
-//  FIX: flushE must zero ALL signals including data
-//
-//  Old (wrong):
-//    flushE → control=0, but RD1,RD2,Rs1,Rs2 = passed through
-//    → ALU computes with real data → garbage ALUResult
-//    → MEM stage sees MemWrite=0 but ALUResult=garbage
-//    → Next cycle: bubble reaches MEM with WriteData=0x00
-//    → UART writes null byte 0x00
-//
-//  New (correct):
-//    flushE → ALL signals = 0 (full NOP bubble)
-//    → ALU inputs = 0 → ALUResult = 0
-//    → MEM stage: MemWrite=0, ALUResult=0
-//    → sel_uart_tx_data = 0 → no UART write ✓
-//
-//  This fix alone eliminates null bytes — no FlushM needed
-// ============================================================
 module EX_stage (
     input  wire        clk,
     input  wire        reset,
     input  wire        flushE,
-
     input  wire [31:0] RD1D_in,
     input  wire [31:0] RD2D_in,
     input  wire [31:0] ImmExtD_in,
@@ -43,7 +22,6 @@ module EX_stage (
     input  wire        JumpD_in,
     input  wire        JumpR_in,
     input  wire [1:0]  ALUType_in,
-
     output reg  [31:0] RD1E_out,
     output reg  [31:0] RD2E_out,
     output reg  [31:0] ImmExtD_out,
@@ -62,13 +40,10 @@ module EX_stage (
     output reg         JumpR_out,
     output reg  [1:0]  ALUType_out
 );
-
-
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset || flushE) begin
-            // Full NOP bubble — data AND control all zero
-            RD1E_out        <= 32'd0;  // ALU input A = 0
-            RD2E_out        <= 32'd0;  // ALU input B = 0
+            RD1E_out        <= 32'd0;
+            RD2E_out        <= 32'd0;
             ImmExtD_out     <= 32'd0;
             PCPlus4D_out    <= 32'd0;
             PC_D_out        <= 32'd0;
@@ -79,13 +54,12 @@ module EX_stage (
             ALUSrcD_out     <= 1'b0;
             RegWriteD_out   <= 1'b0;
             ResultSrcD_out  <= 2'd0;
-            MemWriteD_out   <= 1'b0;   // no memory write
+            MemWriteD_out   <= 1'b0;
             BranchD_out     <= 1'b0;
             JumpD_out       <= 1'b0;
             JumpR_out       <= 1'b0;
             ALUType_out     <= 2'd0;
-        end
-        else begin
+        end else begin
             RD1E_out        <= RD1D_in;
             RD2E_out        <= RD2D_in;
             ImmExtD_out     <= ImmExtD_in;
@@ -105,6 +79,6 @@ module EX_stage (
             ALUType_out     <= ALUType_in;
         end
     end
-
 endmodule
+
 

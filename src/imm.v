@@ -1,59 +1,30 @@
 `default_nettype none
+`timescale 1ns / 1ps
 
 module imm (
-    input  wire [2:0]  ImmSrc,      // Immediate selector
-    input  wire [31:0] instruction, // Full instruction
+    input  wire [2:0]  ImmSrc,
+    input  wire [31:0] instruction,
     output reg  [31:0] ImmExt
 );
-
-
-    wire _unused = &{1'b0, instruction[6:0]}; // silence unused bits warning
+    /* verilator lint_off UNUSEDSIGNAL */
+    wire _unused = &{1'b0, instruction[6:0]};
+    /* verilator lint_on UNUSEDSIGNAL */
 
     always @(*) begin
         case (ImmSrc)
-
-            // I-type (addi, load, jalr)
-            3'b000: begin
-                ImmExt = {{20{instruction[31]}}, instruction[31:20]};
-            end
-
-            // S-type (store)
-            3'b001: begin
-                ImmExt = {{20{instruction[31]}},
-                          instruction[31:25],
-                          instruction[11:7]};
-            end
-
-            // B-type (branch)  ✅ FIXED
-            3'b010: begin
-                ImmExt = {{19{instruction[31]}},
-                          instruction[31],   // <<<<<< MISSING BEFORE
-                          instruction[7],
-                          instruction[30:25],
-                          instruction[11:8],
-                          1'b0};
-            end
-
-            // J-type (jal)  ✅ FIXED
-            3'b011: begin
-                ImmExt = {{11{instruction[31]}},
-                          instruction[31],   // <<<<<< MISSING BEFORE
-                          instruction[19:12],
-                          instruction[20],
-                          instruction[30:21],
-                          1'b0};
-            end
-
-            // U-type (lui, auipc)
-            3'b100: begin
-                ImmExt = {instruction[31:12], 12'b0};
-            end
-
-            default: begin
-                ImmExt = 32'b0;
-            end
+            3'b000: ImmExt = {{20{instruction[31]}}, instruction[31:20]};
+            3'b001: ImmExt = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]};
+            3'b010: ImmExt = {{19{instruction[31]}}, instruction[31],
+                               instruction[7], instruction[30:25],
+                               instruction[11:8], 1'b0};
+            3'b011: ImmExt = {{11{instruction[31]}}, instruction[31],
+                               instruction[19:12], instruction[20],
+                               instruction[30:21], 1'b0};
+            3'b100: ImmExt = {instruction[31:12], 12'b0};
+            default: ImmExt = 32'b0;
         endcase
     end
 endmodule
+
 
 

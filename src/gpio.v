@@ -1,9 +1,6 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-// ============================================================
-//  gpio1_io — CS for SPI1 (fast, CLK_DIV=4, 12.5MHz)
-// ============================================================
 module gpio1_io (
     input  wire clk,
     input  wire reset,
@@ -13,12 +10,10 @@ module gpio1_io (
     input  wire spi_pending,
     output wire gpio_out1
 );
-
-    reg gpio_out_reg;
-    reg deassert_pending;
+    reg gpio_out_reg, deassert_pending;
     wire spi_idle = !spi_busy && !spi_pending;
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             gpio_out_reg     <= 1'b1;
             deassert_pending <= 1'b0;
@@ -45,11 +40,6 @@ module gpio1_io (
     assign gpio_out1 = gpio_out_reg;
 endmodule
 
-
-
-// ============================================================
-//  gpio2_io — CS for SPI2 (slow, CLK_DIV=8, 6.25MHz)
-// ============================================================
 module gpio2_io (
     input  wire clk,
     input  wire reset,
@@ -59,12 +49,10 @@ module gpio2_io (
     input  wire spi_pending,
     output wire gpio_out2
 );
-
-    reg gpio_out_reg;
-    reg deassert_pending;
+    reg gpio_out_reg, deassert_pending;
     wire spi_idle = !spi_busy && !spi_pending;
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             gpio_out_reg     <= 1'b1;
             deassert_pending <= 1'b0;
@@ -90,4 +78,5 @@ module gpio2_io (
     end
     assign gpio_out2 = gpio_out_reg;
 endmodule
+
 
