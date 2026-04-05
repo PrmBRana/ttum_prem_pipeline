@@ -51,11 +51,12 @@ module pipeline (
     wire        stall_Pro;
     wire        halt_top;
 
+    // mem_addr[7:5] unused — DEPTH=32 uses only addr[4:0]
     /* verilator lint_off UNUSEDSIGNAL */
     wire _unused_mem_addr = &{1'b0, mem_addr[7:5]};
     /* verilator lint_on UNUSEDSIGNAL */
 
-    // ── Halt latch — pure sync reset ──────────────────────────
+    // ── Halt latch — pure synchronous reset ───────────────────
     wire halt_active = halt_top & ~stall_Pro & ~FlushD_top & ~FlushE_top;
     reg  halt_latch;
     always @(posedge clk) begin
@@ -81,7 +82,6 @@ module pipeline (
     assign PCTarget_top = JumpRE_top ?
                           ((_base_addr + ImmExtE_top) & 32'hFFFFFFFE) :
                            (_base_addr + ImmExtE_top);
-
     assign PCSCR_top = (zero_top & BranchE_top) | JumpE_top;
 
     // =========================================================
@@ -113,9 +113,10 @@ module pipeline (
         .clk(clk), .reset(reset),
         .rx_data(uart_rx_data_boot), .rx_valid(uart_rx_ready_boot),
         .tx_data(boot_tx_data),      .tx_start(boot_tx_start),
-        .mem_we(Write_enable), .mem_addr(mem_addr),
-        .mem_wdata(mem_wdata), .stall_pro(stall_Pro));
+        .mem_we(Write_enable),       .mem_addr(mem_addr),
+        .mem_wdata(mem_wdata),       .stall_pro(stall_Pro));
 
+    // DEPTH=32 → addr is 5 bits → use mem_addr[4:0]
     mem1KB_32bit flipflop(
         .clk(clk), .reset(reset),
         .we(Write_enable), .addr(mem_addr[4:0]),
@@ -134,7 +135,7 @@ module pipeline (
         .PCplus4_out(PCPLUS4D_TOP), .PC_out(PCD_top));
 
     Control control(
-        .Opcode(INSTRUCTION[6:0]), .funct3(INSTRUCTION[14:12]),
+        .Opcode(INSTRUCTION[6:0]),   .funct3(INSTRUCTION[14:12]),
         .funct7(INSTRUCTION[31:25]), .imm(INSTRUCTION[31:20]),
         .halt(halt_top),
         .RegWriteD(RegWrite_top),      .ResultSrcD(ResultSrcD_top),
@@ -223,10 +224,10 @@ module pipeline (
     Hazard_Unit hazard(
         .Rs1D(INSTRUCTION[19:15]), .Rs2D(INSTRUCTION[24:20]),
         .Rs1E(Rs1E_top),  .Rs2E(Rs2E_top), .RdE(RdE_top),
-        .RegWriteE(RegWriteE_top), .PCSRCE(PCSCR_top),
+        .RegWriteE(RegWriteE_top),  .PCSRCE(PCSCR_top),
         .ResultSrcE_in(ResultSrcE_top),
         .RdM(RdM_top),    .RdW(RdW_top),
-        .RegWriteM(RegWriteM_top), .RegWriteW(RegWriteW_top),
+        .RegWriteM(RegWriteM_top),  .RegWriteW(RegWriteW_top),
         .StallF(StallF_top), .StallD(StallD_top),
         .FlushD(FlushD_top), .FlushE(FlushE_top),
         .Forward_AE(ForwardAE_top), .Forward_BE(ForwardBE_top));
@@ -298,6 +299,7 @@ module pipeline (
 endmodule
 
 
+`default_nettype none
 
 
 
